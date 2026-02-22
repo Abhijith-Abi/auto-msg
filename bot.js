@@ -73,33 +73,65 @@ process.on("unhandledRejection", (error) => {
     console.error("Unhandled Promise Rejection:", error);
 });
 
-// --- 4. Main Message Listener (Optimized for Speed) ---
-// Using "message" instead of "message_create" ensures we only listen to incoming messages.
+// --- 4. Ultra-Fast Optimized Message Listener ---
+const TARGET_TEXT = "is anyone willing to take current shift?";
+let lastProcessedMessageId = null;
+
 client.on("message", async (msg) => {
     try {
-        const text = msg.body?.trim();
-        const targetText = "Is anyone willing to take current shift?";
+        // 🚫 Ignore own messages instantly (important for speed + no loops)
+        if (msg.fromMe) return;
 
-        // ✨ INSTANT TRIGGER DETECTION ✨
-        // 1. We do the exact string match BEFORE any expensive calls
-        // This ensures the bot instantly ignores 99.9% of messages.
-        if (text !== targetText) {
-            return;
+        // 🚫 Ignore non-group chats instantly
+        if (!msg.from.endsWith("@g.us")) return;
+
+        // 🚫 Ignore already processed message
+        if (msg.id._serialized === lastProcessedMessageId) return;
+
+        const text = msg.body?.trim().toLowerCase();
+
+        // ⚡ FAST STRING MATCH (case insensitive)
+        if (text === TARGET_TEXT) {
+            lastProcessedMessageId = msg.id._serialized;
+
+            console.log(
+                `[${new Date().toISOString()}] 🚀 SHIFT MESSAGE DETECTED`,
+            );
+
+            await msg.reply("Ok");
+
+            console.log(`[Bot] ✅ Replied instantly.`);
         }
+    } catch (error) {
+        console.error("[Bot] Error while handling incoming message:", error);
+    }
+});
 
-        // 2. Synchronous group check. All group chat IDs in WA implicitly end in "@g.us"
-        // Avoid `await msg.getChat()` completely because it delays the execution significantly.
-        if (!msg.from.endsWith("@g.us")) {
-            return;
+client.on("message_create", async (msg) => {
+    try {
+        // 🚫 Ignore own messages instantly (important for speed + no loops)
+        if (msg.fromMe) return;
+
+        // 🚫 Ignore non-group chats instantly
+        if (!msg.from.endsWith("@g.us")) return;
+
+        // 🚫 Ignore already processed message
+        if (msg.id._serialized === lastProcessedMessageId) return;
+
+        const text = msg.body?.trim().toLowerCase();
+
+        // ⚡ FAST STRING MATCH (case insensitive)
+        if (text === TARGET_TEXT) {
+            lastProcessedMessageId = msg.id._serialized;
+
+            console.log(
+                `[${new Date().toISOString()}] 🚀 SHIFT MESSAGE DETECTED`,
+            );
+
+            await msg.reply("Ok");
+
+            console.log(`[Bot] ✅ Replied instantly.`);
         }
-
-        console.log(
-            `[${new Date().toISOString()}] Target message detected in group!`,
-        );
-
-        // Instant reply
-        await msg.reply("Ok");
-        console.log(`[Bot] Replied "Ok" successfully.`);
     } catch (error) {
         console.error("[Bot] Error while handling incoming message:", error);
     }
