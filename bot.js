@@ -80,10 +80,11 @@ const client = new Client({
 
 // --- 3. Client Event Handlers ---
 client.on("qr", async (qr) => {
-    console.log("\n======================================================");
-    console.log("🤖 QR CODE RECEIVED!");
-    console.log("Open your browser and navigate to /qr to scan the QR Image.");
-    console.log("======================================================\n");
+    if (!qrCodeDataUrl) {
+        console.log(
+            "🤖 QR CODE RECEIVED! Open your browser and navigate to /qr to scan the QR Image.",
+        );
+    }
     try {
         qrCodeDataUrl = await qrcode.toDataURL(qr);
     } catch (err) {
