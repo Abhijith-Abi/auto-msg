@@ -132,53 +132,44 @@ const TARGET_TEXT = "is anyone willing to take current shift";
 const TARGET_GROUP_NAME = "Testt";
 let lastProcessedMessageId = null;
 
-// Cache to keep track of group IDs we have seen, to avoid repeated API calls
-const groupCache = new Map();
-
-async function isTargetGroup(msg) {
-    if (groupCache.has(msg.from)) {
-        return groupCache.get(msg.from);
-    }
-
-    // Fetch group details if we haven't checked this group before
-    const chat = await msg.getChat();
-    const isTarget = chat.name === TARGET_GROUP_NAME;
-    groupCache.set(msg.from, isTarget);
-    return isTarget;
-}
+// Removed groupCache because it could cache 'false' incorrectly when group metadata isn't fully loaded yet
 
 client.on("message", async (msg) => {
     try {
-        // 🚫 Ignore own messages instantly (important for speed + no loops)
+        // 🚫 Ignore own messages instantly
         if (msg.fromMe) return;
 
         // 🚫 Ignore non-group chats instantly
         if (!msg.from.endsWith("@g.us")) return;
 
-        // 🚫 Only process messages from the specific target group
-        if (!(await isTargetGroup(msg))) return;
+        const text = msg.body?.toLowerCase() || "";
 
+        // ⚡ FAST STRING MATCH (case insensitive) - Check this FIRST to save performance
+        if (!text.includes(TARGET_TEXT)) return;
+
+        const chat = await msg.getChat();
+        const groupName = chat.name?.trim();
         console.log(
-            `[DEBUG message] text: "${msg.body}", group: ${TARGET_GROUP_NAME}`,
+            `[DEBUG message] text matches! Group name is: "${groupName}" (ID: ${msg.from})`,
         );
+
+        // 🚫 Only process messages from the specific target group
+        if (groupName !== TARGET_GROUP_NAME) {
+            console.log(
+                `[DEBUG] Ignored because group is "${groupName}", expected "${TARGET_GROUP_NAME}"`,
+            );
+            return;
+        }
 
         // 🚫 Ignore already processed message
         if (msg.id._serialized === lastProcessedMessageId) return;
+        lastProcessedMessageId = msg.id._serialized;
 
-        const text = msg.body?.toLowerCase() || "";
-
-        // ⚡ FAST STRING MATCH (case insensitive)
-        if (text.includes(TARGET_TEXT)) {
-            lastProcessedMessageId = msg.id._serialized;
-
-            console.log(
-                `[${new Date().toISOString()}] 🚀 SHIFT MESSAGE DETECTED`,
-            );
-
-            await msg.reply("Ok");
-
-            console.log(`[Bot] ✅ Replied instantly.`);
-        }
+        console.log(
+            `[${new Date().toISOString()}] 🚀 SHIFT MESSAGE DETECTED in ${TARGET_GROUP_NAME}`,
+        );
+        await msg.reply("Ok");
+        console.log(`[Bot] ✅ Replied instantly.`);
     } catch (error) {
         console.error("[Bot] Error while handling incoming message:", error);
     }
@@ -186,38 +177,34 @@ client.on("message", async (msg) => {
 
 client.on("message_create", async (msg) => {
     try {
-        // 🚫 Ignore own messages instantly (important for speed + no loops)
+        // 🚫 Ignore own messages instantly
         if (msg.fromMe) return;
 
         // 🚫 Ignore non-group chats instantly
         if (!msg.from.endsWith("@g.us")) return;
 
-        // 🚫 Only process messages from the specific target group
-        if (!(await isTargetGroup(msg))) return;
+        const text = msg.body?.toLowerCase() || "";
 
-        console.log(
-            `[DEBUG message_create] text: "${msg.body}", group: ${TARGET_GROUP_NAME}`,
-        );
+        // ⚡ FAST STRING MATCH FIRST
+        if (!text.includes(TARGET_TEXT)) return;
+
+        const chat = await msg.getChat();
+        const groupName = chat.name?.trim();
+
+        // 🚫 Only process messages from the specific target group
+        if (groupName !== TARGET_GROUP_NAME) return;
 
         // 🚫 Ignore already processed message
         if (msg.id._serialized === lastProcessedMessageId) return;
+        lastProcessedMessageId = msg.id._serialized;
 
-        const text = msg.body?.toLowerCase() || "";
-
-        // ⚡ FAST STRING MATCH (case insensitive)
-        if (text.includes(TARGET_TEXT)) {
-            lastProcessedMessageId = msg.id._serialized;
-
-            console.log(
-                `[${new Date().toISOString()}] 🚀 SHIFT MESSAGE DETECTED`,
-            );
-
-            await msg.reply("Ok");
-
-            console.log(`[Bot] ✅ Replied instantly.`);
-        }
+        console.log(
+            `[${new Date().toISOString()}] 🚀 SHIFT MESSAGE DETECTED in ${TARGET_GROUP_NAME} (from message_create)`,
+        );
+        await msg.reply("Ok");
+        console.log(`[Bot] ✅ Replied instantly.`);
     } catch (error) {
-        console.error("[Bot] Error while handling incoming message:", error);
+        console.error("[Bot] Error while handling message_create:", error);
     }
 });
 
