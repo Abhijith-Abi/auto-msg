@@ -151,15 +151,11 @@ client.on("message", async (msg) => {
 
         const chat = await msg.getChat();
         const groupName = chat.name?.trim();
-        console.log(
-            `[DEBUG message] text matches! Group name is: "${groupName}" (ID: ${msg.from})`,
-        );
+        console.log(`[DEBUG message] text matches! Group name is: "${groupName}" (ID: ${msg.from})`);
 
         // 🚫 Only process messages from the specific target group
         if (groupName !== TARGET_GROUP_NAME) {
-            console.log(
-                `[DEBUG] Ignored because group is "${groupName}", expected "${TARGET_GROUP_NAME}"`,
-            );
+            console.log(`[DEBUG] Ignored because group is "${groupName}", expected "${TARGET_GROUP_NAME}"`);
             return;
         }
 
@@ -167,9 +163,7 @@ client.on("message", async (msg) => {
         if (msg.id._serialized === lastProcessedMessageId) return;
         lastProcessedMessageId = msg.id._serialized;
 
-        console.log(
-            `[${new Date().toISOString()}] 🚀 SHIFT MESSAGE DETECTED in ${TARGET_GROUP_NAME}`,
-        );
+        console.log(`[${new Date().toISOString()}] 🚀 SHIFT MESSAGE DETECTED in ${TARGET_GROUP_NAME}`);
         await msg.reply("Ok");
         console.log(`[Bot] ✅ Replied instantly.`);
     } catch (error) {
