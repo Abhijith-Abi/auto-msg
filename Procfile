@@ -1,1 +1,1 @@
-web: node bot.js
+web: rm -rf .wwebjs_auth && node bot.js

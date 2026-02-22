@@ -3,7 +3,6 @@ const qrcode = require("qrcode");
 const express = require("express");
 
 // --- 1. Railway Sleep Prevention & Health Check Server ---
-// Railway needs a web service to bind to a PORT. This prevents sleep/crashes.
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -58,21 +57,20 @@ app.listen(port, () => {
 });
 
 // --- 2. Production Puppeteer & Client Setup ---
+// CRITICAL FIX: Removed --single-process flag which breaks message events in WhatsApp Web
 const client = new Client({
     authStrategy: new LocalAuth({
         clientId: "bot-session",
-        dataPath: "./.wwebjs_auth", // Safer session handling with explicit path
+        dataPath: "./.wwebjs_auth",
     }),
     puppeteer: {
-        headless: true, // Headless requirement
+        headless: true,
         args: [
             "--no-sandbox",
             "--disable-setuid-sandbox",
             "--disable-dev-shm-usage",
             "--disable-accelerated-2d-canvas",
             "--no-first-run",
-            "--no-zygote",
-            "--single-process",
             "--disable-gpu",
         ],
     },
@@ -96,6 +94,7 @@ client.on("ready", () => {
     isAuthenticated = true;
     qrCodeDataUrl = null;
     console.log("[Bot] Successfully authenticated and ready!");
+    console.log("[Bot] Message listeners are active. Waiting for messages...");
 });
 
 client.on("authenticated", () => {
@@ -114,7 +113,6 @@ client.on("disconnected", (reason) => {
     qrCodeDataUrl = null;
     console.log("[Bot] Client disconnected. Reason:", reason);
     console.log("[Bot] Attempting to reconnect...");
-    // Slight delay before reconnecting to prevent rapid crash loops
     setTimeout(() => {
         client
             .initialize()
@@ -127,83 +125,53 @@ process.on("unhandledRejection", (error) => {
     console.error("Unhandled Promise Rejection:", error);
 });
 
-// --- 4. Ultra-Fast Optimized Message Listener ---
+// --- 4. Message Listener ---
 const TARGET_TEXT = "is anyone willing to take current shift";
 const TARGET_GROUP_NAME = "Testt";
 let lastProcessedMessageId = null;
 
-// Removed groupCache because it could cache 'false' incorrectly when group metadata isn't fully loaded yet
-
-client.on("message", async (msg) => {
+// Use message_create which fires for ALL messages (incoming + outgoing)
+// The 'message' event sometimes doesn't fire on certain whatsapp-web.js versions
+client.on("message_create", async (msg) => {
     try {
-        console.log(`[RAW INCOMING] ${JSON.stringify({ from: msg.from, to: msg.to, type: msg.type, body: msg.body })}`);
-        console.log(`[DEBUG GLOBAL message] From: ${msg.from}, isGroup: ${msg.from.endsWith("@g.us")}, fromMe: ${msg.fromMe}, body: "${msg.body}"`);
-        
-        // 🚫 Ignore own messages instantly
+        // Log EVERY message for debugging
+        console.log(
+            `[MSG] from=${msg.from} fromMe=${msg.fromMe} type=${msg.type} body="${msg.body?.substring(0, 50)}"`,
+        );
+
+        // 🚫 Ignore own messages
         if (msg.fromMe) return;
 
-        // 🚫 Ignore non-group chats instantly
+        // 🚫 Ignore non-group chats
         if (!msg.from.endsWith("@g.us")) return;
 
         const text = msg.body?.toLowerCase() || "";
 
-        // ⚡ FAST STRING MATCH (case insensitive) - Check this FIRST to save performance
+        // ⚡ Check text match first (fast path)
         if (!text.includes(TARGET_TEXT)) return;
+
+        console.log(`[Bot] 🎯 Target text matched! Checking group name...`);
 
         const chat = await msg.getChat();
         const groupName = chat.name?.trim();
-        console.log(`[DEBUG message] text matches! Group name is: "${groupName}" (ID: ${msg.from})`);
+        console.log(
+            `[Bot] Group name: "${groupName}" (expected: "${TARGET_GROUP_NAME}")`,
+        );
 
-        // 🚫 Only process messages from the specific target group
         if (groupName !== TARGET_GROUP_NAME) {
-            console.log(`[DEBUG] Ignored because group is "${groupName}", expected "${TARGET_GROUP_NAME}"`);
+            console.log(`[Bot] ❌ Wrong group, ignoring.`);
             return;
         }
 
-        // 🚫 Ignore already processed message
+        // Prevent duplicate replies
         if (msg.id._serialized === lastProcessedMessageId) return;
         lastProcessedMessageId = msg.id._serialized;
 
-        console.log(`[${new Date().toISOString()}] 🚀 SHIFT MESSAGE DETECTED in ${TARGET_GROUP_NAME}`);
+        console.log(`[${new Date().toISOString()}] 🚀 SHIFT MESSAGE DETECTED!`);
         await msg.reply("Ok");
-        console.log(`[Bot] ✅ Replied instantly.`);
+        console.log(`[Bot] ✅ Replied "Ok" successfully!`);
     } catch (error) {
-        console.error("[Bot] Error while handling incoming message:", error);
-    }
-});
-
-client.on("message_create", async (msg) => {
-    try {
-        console.log(`[DEBUG GLOBAL message_create] From: ${msg.from}, to: ${msg.to}, isGroup: ${msg.from.endsWith("@g.us")}, fromMe: ${msg.fromMe}, body: "${msg.body}"`);
-        
-        // 🚫 Ignore own messages instantly
-        if (msg.fromMe) return;
-
-        // 🚫 Ignore non-group chats instantly
-        if (!msg.from.endsWith("@g.us")) return;
-
-        const text = msg.body?.toLowerCase() || "";
-
-        // ⚡ FAST STRING MATCH FIRST
-        if (!text.includes(TARGET_TEXT)) return;
-
-        const chat = await msg.getChat();
-        const groupName = chat.name?.trim();
-
-        // 🚫 Only process messages from the specific target group
-        if (groupName !== TARGET_GROUP_NAME) return;
-
-        // 🚫 Ignore already processed message
-        if (msg.id._serialized === lastProcessedMessageId) return;
-        lastProcessedMessageId = msg.id._serialized;
-
-        console.log(
-            `[${new Date().toISOString()}] 🚀 SHIFT MESSAGE DETECTED in ${TARGET_GROUP_NAME} (from message_create)`,
-        );
-        await msg.reply("Ok");
-        console.log(`[Bot] ✅ Replied instantly.`);
-    } catch (error) {
-        console.error("[Bot] Error while handling message_create:", error);
+        console.error("[Bot] Error:", error);
     }
 });
 
