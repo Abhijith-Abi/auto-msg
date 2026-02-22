@@ -80,22 +80,21 @@ client.on("message", async (msg) => {
         const text = msg.body?.trim();
         const targetText = "Is anyone willing to take current shift?";
 
-        // ✨ FASTER TRIGGER DETECTION ✨
-        // We do the exact string match BEFORE doing expensive async calls like msg.getChat()
+        // ✨ INSTANT TRIGGER DETECTION ✨
+        // 1. We do the exact string match BEFORE any expensive calls
         // This ensures the bot instantly ignores 99.9% of messages.
         if (text !== targetText) {
             return;
         }
 
-        const chat = await msg.getChat();
-
-        // Only react if the message was sent in a Group
-        if (!chat.isGroup) {
+        // 2. Synchronous group check. All group chat IDs in WA implicitly end in "@g.us"
+        // Avoid `await msg.getChat()` completely because it delays the execution significantly.
+        if (!msg.from.endsWith("@g.us")) {
             return;
         }
 
         console.log(
-            `[${new Date().toISOString()}] Target message detected in group "${chat.name}"!`,
+            `[${new Date().toISOString()}] Target message detected in group!`,
         );
 
         // Instant reply
