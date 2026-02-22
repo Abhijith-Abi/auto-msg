@@ -1,5 +1,5 @@
 const { Client, LocalAuth } = require("whatsapp-web.js");
-const qrcode = require("qrcode-terminal");
+const qrcode = require("qrcode");
 const express = require("express");
 
 // --- 1. Railway Sleep Prevention & Health Check Server ---
@@ -7,8 +7,51 @@ const express = require("express");
 const app = express();
 const port = process.env.PORT || 3000;
 
+let qrCodeDataUrl = null;
+let isAuthenticated = false;
+
 app.get("/", (req, res) => res.send("WhatsApp Auto-Reply Bot is Active 24/7!"));
 app.get("/ping", (req, res) => res.send("pong"));
+
+app.get("/qr", (req, res) => {
+    if (isAuthenticated) {
+        return res.send(`
+            <html>
+                <body style="display:flex;justify-content:center;align-items:center;height:100vh;margin:0;font-family:sans-serif;background-color:#f0f2f5;">
+                    <div style="text-align:center;padding:40px;background:white;border-radius:10px;box-shadow:0 4px 10px rgba(0,0,0,0.1);">
+                        <h2 style="color:#25d366;margin:0;">✅ Bot is already authenticated!</h2>
+                        <p style="color:#666;margin-top:10px;">No QR code needed. Close this page.</p>
+                    </div>
+                </body>
+            </html>
+        `);
+    }
+
+    if (!qrCodeDataUrl) {
+        return res.send(`
+            <html>
+                <body style="display:flex;justify-content:center;align-items:center;height:100vh;margin:0;font-family:sans-serif;background-color:#f0f2f5;">
+                    <div style="text-align:center;padding:40px;background:white;border-radius:10px;box-shadow:0 4px 10px rgba(0,0,0,0.1);">
+                        <h2 style="color:#333;margin:0;">⏳ QR Code is generating...</h2>
+                        <p style="color:#666;margin-top:10px;">Please wait a few seconds and refresh this page.</p>
+                    </div>
+                </body>
+            </html>
+        `);
+    }
+
+    res.send(`
+        <html>
+            <body style="display:flex;justify-content:center;align-items:center;height:100vh;margin:0;background-color:#f0f2f5;">
+                <div style="text-align:center;padding:30px;background:white;border-radius:10px;box-shadow:0 4px 10px rgba(0,0,0,0.1);">
+                    <h2 style="font-family:sans-serif;color:#333;margin-top:0;">Scan WhatsApp QR Code</h2>
+                    <img src="${qrCodeDataUrl}" alt="QR Code" style="width:300px;height:300px;border:1px solid #eee;border-radius:10px;padding:10px;"/>
+                    <p style="font-family:sans-serif;color:#666;font-size:14px;margin-bottom:0;">(Refresh page if QR code has expired)</p>
+                </div>
+            </body>
+        </html>
+    `);
+});
 
 app.listen(port, () => {
     console.log(`[Server] Health check server listening on port ${port}`);
@@ -36,28 +79,38 @@ const client = new Client({
 });
 
 // --- 3. Client Event Handlers ---
-client.on("qr", (qr) => {
+client.on("qr", async (qr) => {
     console.log("\n======================================================");
     console.log("🤖 QR CODE RECEIVED!");
-    console.log("Scan this QR code with your WhatsApp app to log in:");
-    qrcode.generate(qr, { small: true });
+    console.log("Open your browser and navigate to /qr to scan the QR Image.");
     console.log("======================================================\n");
+    try {
+        qrCodeDataUrl = await qrcode.toDataURL(qr);
+    } catch (err) {
+        console.error("Failed to generate QR code image", err);
+    }
 });
 
 client.on("ready", () => {
+    isAuthenticated = true;
+    qrCodeDataUrl = null;
     console.log("[Bot] Successfully authenticated and ready!");
 });
 
 client.on("authenticated", () => {
+    isAuthenticated = true;
     console.log("[Bot] Session authenticated and saved securely.");
 });
 
 client.on("auth_failure", (msg) => {
+    isAuthenticated = false;
     console.error("[Bot] Authentication failure:", msg);
 });
 
 // Auto-reconnect & Error Handling
 client.on("disconnected", (reason) => {
+    isAuthenticated = false;
+    qrCodeDataUrl = null;
     console.log("[Bot] Client disconnected. Reason:", reason);
     console.log("[Bot] Attempting to reconnect...");
     // Slight delay before reconnecting to prevent rapid crash loops
