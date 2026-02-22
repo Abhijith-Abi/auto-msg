@@ -128,7 +128,7 @@ process.on("unhandledRejection", (error) => {
 });
 
 // --- 4. Ultra-Fast Optimized Message Listener ---
-const TARGET_TEXT = "is anyone willing to take current shift?";
+const TARGET_TEXT = "is anyone willing to take current shift";
 let lastProcessedMessageId = null;
 
 client.on("message", async (msg) => {
@@ -142,10 +142,10 @@ client.on("message", async (msg) => {
         // 🚫 Ignore already processed message
         if (msg.id._serialized === lastProcessedMessageId) return;
 
-        const text = msg.body?.trim().toLowerCase();
+        const text = msg.body?.toLowerCase() || "";
 
         // ⚡ FAST STRING MATCH (case insensitive)
-        if (text === TARGET_TEXT) {
+        if (text.includes(TARGET_TEXT)) {
             lastProcessedMessageId = msg.id._serialized;
 
             console.log(
@@ -172,10 +172,10 @@ client.on("message_create", async (msg) => {
         // 🚫 Ignore already processed message
         if (msg.id._serialized === lastProcessedMessageId) return;
 
-        const text = msg.body?.trim().toLowerCase();
+        const text = msg.body?.toLowerCase() || "";
 
         // ⚡ FAST STRING MATCH (case insensitive)
-        if (text === TARGET_TEXT) {
+        if (text.includes(TARGET_TEXT)) {
             lastProcessedMessageId = msg.id._serialized;
 
             console.log(
