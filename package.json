@@ -4,12 +4,13 @@
     "description": "24/7 WhatsApp auto-reply bot for Railway",
     "main": "bot.js",
     "scripts": {
-        "start": "node bot.js"
+        "start": "node bot.js",
+        "postinstall": "npx puppeteer browsers install chrome"
     },
     "dependencies": {
         "express": "^4.19.2",
         "puppeteer": "^22.6.0",
-        "qrcode-terminal": "^0.12.0",
+        "qrcode": "^1.5.4",
         "whatsapp-web.js": "^1.23.0"
     },
     "engines": {
