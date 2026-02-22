@@ -1,10 +1,11 @@
 const { Client, LocalAuth } = require("whatsapp-web.js");
 const qrcode = require("qrcode");
 const express = require("express");
+const fs = require("fs");
 
 // --- 1. Railway Sleep Prevention & Health Check Server ---
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3001;
 
 let qrCodeDataUrl = null;
 let isAuthenticated = false;
@@ -58,6 +59,16 @@ app.listen(port, () => {
 
 // --- 2. Production Puppeteer & Client Setup ---
 // CRITICAL FIX: Removed --single-process flag which breaks message events in WhatsApp Web
+// Clean any stale session data before initializing the client
+if (fs.existsSync("./.wwebjs_auth")) {
+    try {
+        fs.rmSync("./.wwebjs_auth", { recursive: true, force: true });
+        console.log("[Bot] Cleared old session folder .wwebjs_auth");
+    } catch (e) {
+        console.error("[Bot] Failed to clear session folder:", e);
+    }
+}
+
 const client = new Client({
     authStrategy: new LocalAuth({
         clientId: "bot-session",
@@ -172,6 +183,29 @@ client.on("message_create", async (msg) => {
         console.log(`[Bot] ✅ Replied "Ok" successfully!`);
     } catch (error) {
         console.error("[Bot] Error:", error);
+    }
+});
+
+// Fallback listener for older versions where 'message' fires but 'message_create' may not
+client.on("message", async (msg) => {
+    // Reuse the same logic as message_create
+    try {
+        console.log(
+            `[MSG] from=${msg.from} fromMe=${msg.fromMe} type=${msg.type} body="${msg.body?.substring(0, 50)}"`,
+        );
+        if (msg.fromMe) return;
+        if (!msg.from.endsWith("@g.us")) return;
+        const text = msg.body?.toLowerCase() || "";
+        if (!text.includes(TARGET_TEXT)) return;
+        const chat = await msg.getChat();
+        const groupName = chat.name?.trim();
+        if (groupName !== TARGET_GROUP_NAME) return;
+        if (msg.id._serialized === lastProcessedMessageId) return;
+        lastProcessedMessageId = msg.id._serialized;
+        await msg.reply("Ok");
+        console.log(`[Bot] ✅ Replied "Ok" via fallback listener`);
+    } catch (e) {
+        console.error("[Bot] Fallback listener error:", e);
     }
 });
 
