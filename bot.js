@@ -136,6 +136,8 @@ let lastProcessedMessageId = null;
 
 client.on("message", async (msg) => {
     try {
+        console.log(`[DEBUG GLOBAL message] From: ${msg.from}, isGroup: ${msg.from.endsWith("@g.us")}, fromMe: ${msg.fromMe}, body: "${msg.body}"`);
+        
         // 🚫 Ignore own messages instantly
         if (msg.fromMe) return;
 
@@ -177,6 +179,8 @@ client.on("message", async (msg) => {
 
 client.on("message_create", async (msg) => {
     try {
+        console.log(`[DEBUG GLOBAL message_create] From: ${msg.from}, to: ${msg.to}, isGroup: ${msg.from.endsWith("@g.us")}, fromMe: ${msg.fromMe}, body: "${msg.body}"`);
+        
         // 🚫 Ignore own messages instantly
         if (msg.fromMe) return;
 
