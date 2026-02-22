@@ -133,6 +133,10 @@ let lastProcessedMessageId = null;
 
 client.on("message", async (msg) => {
     try {
+        console.log(
+            `[DEBUG message] text: "${msg.body}", fromMe: ${msg.fromMe}, from: ${msg.from}, isGroup: ${msg.from.endsWith("@g.us")}`,
+        );
+
         // 🚫 Ignore own messages instantly (important for speed + no loops)
         if (msg.fromMe) return;
 
@@ -163,6 +167,10 @@ client.on("message", async (msg) => {
 
 client.on("message_create", async (msg) => {
     try {
+        console.log(
+            `[DEBUG message_create] text: "${msg.body}", fromMe: ${msg.fromMe}, from: ${msg.from}, isGroup: ${msg.from.endsWith("@g.us")}`,
+        );
+
         // 🚫 Ignore own messages instantly (important for speed + no loops)
         if (msg.fromMe) return;
 
