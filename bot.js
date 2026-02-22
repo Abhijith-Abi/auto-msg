@@ -129,19 +129,38 @@ process.on("unhandledRejection", (error) => {
 
 // --- 4. Ultra-Fast Optimized Message Listener ---
 const TARGET_TEXT = "is anyone willing to take current shift";
+const TARGET_GROUP_NAME = "Testt";
 let lastProcessedMessageId = null;
+
+// Cache to keep track of group IDs we have seen, to avoid repeated API calls
+const groupCache = new Map();
+
+async function isTargetGroup(msg) {
+    if (groupCache.has(msg.from)) {
+        return groupCache.get(msg.from);
+    }
+
+    // Fetch group details if we haven't checked this group before
+    const chat = await msg.getChat();
+    const isTarget = chat.name === TARGET_GROUP_NAME;
+    groupCache.set(msg.from, isTarget);
+    return isTarget;
+}
 
 client.on("message", async (msg) => {
     try {
-        console.log(
-            `[DEBUG message] text: "${msg.body}", fromMe: ${msg.fromMe}, from: ${msg.from}, isGroup: ${msg.from.endsWith("@g.us")}`,
-        );
-
         // 🚫 Ignore own messages instantly (important for speed + no loops)
         if (msg.fromMe) return;
 
         // 🚫 Ignore non-group chats instantly
         if (!msg.from.endsWith("@g.us")) return;
+
+        // 🚫 Only process messages from the specific target group
+        if (!(await isTargetGroup(msg))) return;
+
+        console.log(
+            `[DEBUG message] text: "${msg.body}", group: ${TARGET_GROUP_NAME}`,
+        );
 
         // 🚫 Ignore already processed message
         if (msg.id._serialized === lastProcessedMessageId) return;
@@ -167,15 +186,18 @@ client.on("message", async (msg) => {
 
 client.on("message_create", async (msg) => {
     try {
-        console.log(
-            `[DEBUG message_create] text: "${msg.body}", fromMe: ${msg.fromMe}, from: ${msg.from}, isGroup: ${msg.from.endsWith("@g.us")}`,
-        );
-
         // 🚫 Ignore own messages instantly (important for speed + no loops)
         if (msg.fromMe) return;
 
         // 🚫 Ignore non-group chats instantly
         if (!msg.from.endsWith("@g.us")) return;
+
+        // 🚫 Only process messages from the specific target group
+        if (!(await isTargetGroup(msg))) return;
+
+        console.log(
+            `[DEBUG message_create] text: "${msg.body}", group: ${TARGET_GROUP_NAME}`,
+        );
 
         // 🚫 Ignore already processed message
         if (msg.id._serialized === lastProcessedMessageId) return;
