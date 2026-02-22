@@ -136,6 +136,7 @@ let lastProcessedMessageId = null;
 
 client.on("message", async (msg) => {
     try {
+        console.log(`[RAW INCOMING] ${JSON.stringify({ from: msg.from, to: msg.to, type: msg.type, body: msg.body })}`);
         console.log(`[DEBUG GLOBAL message] From: ${msg.from}, isGroup: ${msg.from.endsWith("@g.us")}, fromMe: ${msg.fromMe}, body: "${msg.body}"`);
         
         // 🚫 Ignore own messages instantly
