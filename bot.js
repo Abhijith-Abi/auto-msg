@@ -34,7 +34,10 @@ const client = new Client({
     }),
     puppeteer: {
         headless: true,
-        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+        executablePath:
+            process.env.PUPPETEER_EXECUTABLE_PATH ||
+            "/run/current-system/sw/bin/chromium" ||
+            undefined,
         args: [
             "--no-sandbox",
             "--disable-setuid-sandbox",
