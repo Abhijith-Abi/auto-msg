@@ -34,7 +34,7 @@ const client = new Client({
     }),
     puppeteer: {
         headless: true,
-        executablePath:
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || "/usr/bin/chromium" || undefined,
             process.env.PUPPETEER_EXECUTABLE_PATH ||
             "/run/current-system/sw/bin/chromium" ||
             undefined,

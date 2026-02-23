@@ -1,6 +1,0 @@
-[phases.setup]
-nixPkgs = ["chromium", "nss", "nspr", "atk", "at-spi2-atk", "xorg.libX11", "xorg.libXcomposite", "xorg.libXdamage", "xorg.libXext", "xorg.libXfixes", "xorg.libXrandr", "libgbm", "libxcb", "xorg.libxkbcommon", "pango", "cairo", "glib", "gdk-pixbuf", "gtk3", "alsa-lib", "cups"]
-
-[variables]
-PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true"
-PUPPETEER_EXECUTABLE_PATH = "/run/current-system/sw/bin/chromium"
