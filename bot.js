@@ -101,11 +101,17 @@ client.on("qr", async (qr) => {
     }
 });
 
-client.on("ready", () => {
+client.on("ready", async () => {
     isAuthenticated = true;
     qrCodeDataUrl = null;
     console.log("[Bot] Successfully authenticated and ready!");
     console.log("[Bot] Message listeners are active. Waiting for messages...");
+    try {
+        const chats = await client.getChats();
+        console.log(`[Bot] Loaded ${chats.length} chats after ready.`);
+    } catch (e) {
+        console.error("[Bot] Error loading chats on ready:", e);
+    }
 });
 
 client.on("authenticated", () => {
