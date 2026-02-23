@@ -24,7 +24,7 @@ app.get("/qr", (_req, res) => {
         `<html><body style="display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#f0f2f5"><div style="text-align:center;padding:30px;background:#fff;border-radius:12px;box-shadow:0 4px 14px rgba(0,0,0,.12)"><h2 style="font-family:sans-serif;margin-top:0">Scan with WhatsApp</h2><img src="${qrDataUrl}" style="width:300px;height:300px"/><p style="font-family:sans-serif;color:#888;font-size:13px">Refresh if expired</p></div></body></html>`,
     );
 });
-app.listen(PORT, () => console.log(`[Server] Listening on port ${PORT}`));
+app.listen(PORT, "0.0.0.0", () => console.log(`[Server] Listening on port ${PORT}`));
 
 // ─── WhatsApp client ────────────────────────────────────────────────────────
 const client = new Client({
